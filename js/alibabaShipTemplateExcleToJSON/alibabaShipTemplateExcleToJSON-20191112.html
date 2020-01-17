@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>阿里巴巴运费模板插件-第1版：Excle转为JSON</title>
+	<!--导入 JQuery 库-->
+	<script lang="javascript" src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+	<!--导入 js-xls插件-->
+	<script lang="javascript" src="https://cdn.bootcss.com/xlsx/0.15.1/xlsx.full.min.js"></script>
+</head> 
+<body>
+
+<h2 class="title">阿里巴巴运费模板插件-第1版：Excle转为JSON</h2>
+<div class="content-card"> 
+<div>
+	<strong>Tips:</strong>
+	<ol>
+		<li>「物流公司名称」选项不选择主要是影响生成的「JSON」字段<strong>「shippingCountry」</strong>，其他无影响</li>
+		<li>
+			&nbsp;&nbsp;Excel 表格的格式默认统一采用<strong>第一行为表头</strong>，排列为：「中文名、英文名、地区简写、配送服务费、Item服务费、首重价格、续重价格」
+		</li>
+		<li>&nbsp;&nbsp;默认首重为0.01kg，最大重量1kg，每增重采用0.01kg为一个增长单位</li>
+	</ol>
+</div>
+<hr/>
+
+<ul>
+	<li>物流公司名称：
+		<select name="物流公司" class="select-drop" id="shippingkinds">
+			<option value="freight-custom-setting-AE_CN_SUPER_ECONOMY_G">菜鸟超级经济Global</option>
+			<option value="custom-define-CAINIAO_EXPEDITED_ECONOMY">菜鸟专线经济</option>
+			<option value="custom-define-CAINIAO_SUPER_ECONOMY_SG">菜鸟特货专线－超级经济</option>
+			<option value="freight-custom-setting-SGP_OMP">4PX新邮经济小包</option>
+			<option value="freight-custom-setting-SINOTRANS_PY">中外运-西邮经济小包</option>
+			<option value="freight-custom-setting-YANWEN_ECONOMY">菜鸟超级经济-燕文</option>
+			<option value="freight-custom-setting-SUNYOU_ECONOMY">菜鸟超级经济-顺友</option>
+			<option value="freight-custom-setting-SF_EPARCEL_OM">顺丰国际经济小包</option>  
+		</select>
+	</li>
+	<li>运费模板表格： 
+	<label for="ShippingTemplate" class="ShippingTemplateLabel">
+		    <input type="button" class="btn-primary" value="点我上传"><span>请上传Word文档</span>
+		    <input type="file" id="ShippingTemplate">
+	</label>
+	</li>  
+	<li>运费模板JSON：</li>
+	<li><textarea id="shippingTemplateJSON"  ></textarea> </li>
+</ul> 
+</div>
+ 
+
+
+<!--快递公司相关地区信息，需要随时更新-->
+<div class="content-card">
+	<h2 class="title">阿里巴巴运费模板-地区数据</h2>
+<table > 
+	<thead>
+		<th>名称</th>
+		<th>TextArea选择符</th>
+		<th>地区简写</th>
+	</thead>
+	<tbody>
+
+		<tr id="freight-custom-setting-AE_CN_SUPER_ECONOMY_G">
+			<td>菜鸟超级经济Global</td>
+			<td>freight-custom-setting-AE_CN_SUPER_ECONOMY_G</td>
+ 			<td><textarea>DZ,AF,AL,AD,AO,AR,AM,AU,AT,AZ,BH,BD,BE,BZ,BJ,BT,BO,BA,BW,BG,BF,BI,CM,CA,CV,TD,CL,CO,CR,HR,CY,CZ,ZR,DK,DJ,EC,EG,GQ,EE,ET,FK,FO,FJ,FI,FR,PF,GA,GM,DE,GH,GI,GR,GU,GT,GW,GY,HN,HU,IS,IN,ID,IQ,IE,IL,IT,CI,JP,JO,KH,KZ,KE,KI,KW,KG,LA,LV,LB,LS,LR,LY,LI,LT,LU,MK,MG,MW,MY,MV,ML,MT,MR,MU,MX,MC,MN,MNE,MA,MZ,MM,NA,NP,NL,NC,NZ,NI,NE,NG,NO,OM,PK,PA,PG,PY,PE,PH,PL,PT,PR,QA,MD,RE,RO,RW,SM,SN,SRB,SC,SG,SK,SI,SB,ZA,KR,LK,SR,SZ,SE,CH,TJ,TH,TLS,TG,TO,TN,TR,TM,UG,UK,TZ,US,UY,UZ,VU,VE,VN,ZM,ZW,BN,GE,GN,SJ,SX,SV,TT,AN,MH,AS,VI,FM,PM,VG,GF,GD,AI,GGY,GP,WF,KY,KM,MP,CK,AG,LC</textarea></td>
+ 		</tr>
+ 		<tr id="custom-define-CAINIAO_EXPEDITED_ECONOMY">
+ 			<td>菜鸟专线经济</td>
+ 			<td>custom-define-CAINIAO_EXPEDITED_ECONOMY</td>
+ 			<td><textarea>KR,ES,RU</textarea></td>
+ 		</tr>
+ 		<tr id="custom-define-CAINIAO_SUPER_ECONOMY_SG">
+ 			<td>菜鸟特货专线－超级经济</td>
+ 			<td>custom-define-CAINIAO_SUPER_ECONOMY_SG</td>
+ 			<td><textarea>BZ,CR,CA,HN,NI,PA,GT,MX,PR,US,RU,ES,AF,AL,DZ,BJ,BF,TD,ZR,LR,ML,SN,TG,TN,AD,AO,BW,LS,MG,MW,NA,RW,SZ,AR,AZ,AM,BG,AU,AT,BH,BD,TR,BO,EC,IQ,LI,BT,BA,BI,FK,CM,CV,PE,CO,HR,CY,CZ,DK,DJ,SC,EG,GQ,GA,GY,SR,EE,ET,FO,FJ,FI,FR,PF,GM,GH,GI,IE,GR,GU,GW,HU,IS,IN,ID,IL,IT,CI,JP,KH,LA,KE,KI,TO,VU,KG,LV,LB,LY,LT,LU,MK,MY,MV,MT,MR,NE,MN,MNE,MZ,MM,NP,NL,NC,NG,NO,OM,PK,PG,PH,PL,QA,MD,SRB,RE,RO,SM,SG,SK,SI,SB,ZA,KR,LK,SE,CH,TJ,TH,TM,UK,TZ,UY,VE,VN,ZM,ZW,BN,MA,MC,KZ,UG,NZ,DE,PY,TLS,MU,PT,UZ,BE,JO,KW</textarea></td>
+ 		</tr>
+ 		<tr id="freight-custom-setting-SGP_OMP">
+ 			<td>4PX新邮经济小包</td>
+ 			<td>freight-custom-setting-SGP_OMP</td>
+			<td><textarea>
+			 CA,AR,IE,AU,BR,BE,PL,DK,DE,FR,NL,CZ,US,MX,NO,PT,SE,TR,UA,ES,IL,IT,UK,CL,RU,AF,AL,DZ,AS,AD,AO,AI,AG,AM,AW,AT,AZ,BH,BD,BB,BY,BZ,BJ,BM,BT,BA,BW,BG,BF,BI,CV,KY,CF,TD,CX,CC,CO,KM,CG,CR,HR,CY,ZR,DJ,DO,EC,EG,SV,GQ,ER,EE,ET,FK,FO,FJ,FI,PF,GA,GM,GE,GH,GI,GR,GL,GD,GP,GN,GF,HT,HN,HU,IS,IN,ID,IQ,CI,JM,JP,JO,KH,KZ,KE,KI,KW,KG,LA,LV,LB,LS,LR,LY,LI,LT,LU,MK,MG,MW,MY,MV,ML,MT,MH,MQ,MR,MU,MC,MN,MS,MA,MZ,MM,NA,NR,NP,AN,NC,NZ,NI,NE,NG,NF,MP,OM,PK,PA,PG,PY,PE,PH,PR,QA,MD,RE,RO,RW,SH,KN,LC,PM,VC,WS,SM,ST,SN,SRB,SC,SL,SG,SK,SI,SO,ZA,KR,LK,SR,SZ,CH,TJ,TH,BS,VA,TP,TG,TO,TT,TN,TM,TC,TV,UG,TZ,UY,UZ,VU,VE,VN,VG,VI,WF,EH,ZM,ZW,BN,PN,PS,ASC,CK,DM</textarea></td>
+ 		</tr>
+ 		<tr id="freight-custom-setting-SINOTRANS_PY">
+ 			<td>中外运-西邮经济小包</td>
+			<td>freight-custom-setting-SINOTRANS_PY</td>
+			<td><textarea>ES</textarea></td> 
+ 		</tr>
+ 		<tr id="freight-custom-setting-YANWEN_ECONOMY">
+ 			<td>菜鸟超级经济-燕文</td>
+ 			<td>freight-custom-setting-YANWEN_ECONOMY</td>
+ 			<td><textarea>AF,IE,EE,AT,AU,BE,IS,PL,DK,DE,FR,FI,NL,CA,CZ,HR,LV,LT,US,MD,MX,NO,PT,SE,CH,SK,SI,TH,TR,NZ,HU,IL,IT,IN,UK,CL,PR,KZ,CY,RO,PE,MT,BA,CO,CR,LK,ZA,NG,KE,GE,JP,KR,ID,AL,DZ,AR,OM,AZ,EG,ET,AD,AO,PG,PK,PY,BH,PA,BG,BJ,BW,BT,BF,BI,GQ,TL,TG,FO,PF,PH,FJ,CV,FK,GM,GU,GY,MNE,HN,KI,DJ,KG,GN,GW,GH,GA,KH,ZW,CM,QA,KW,LS,LA,LB,LR,RE,LU,RW,MG,MV,MW,ML,MK,MU,MR,MN,BD,MM,MA,MC,MZ,NA,NP,NI,NE,SRB,SN,SC,SM,SZ,SR,SB,TJ,TZ,TO,TN,TM,VU,GT,VE,BN,UG,UY,UZ,GR,CI,NC,AM,JO,VN,ZM,TD,GI,SJ,SX,SV,BO,BZ,TT,EC,AN,LI,MH,AS,VI,FM,PM,VI,GF,GD,AI,LC,GGY,GP,WF,KY,KM,MP,CK,AG</textarea></td>
+ 		</tr>
+ 		<tr id="freight-custom-setting-SUNYOU_ECONOMY">
+ 			<td>菜鸟超级经济-顺友 </td>
+			<td>freight-custom-setting-SUNYOU_ECONOMY</td>
+			<td><textarea>BZ,AF,AL,DZ,BJ,BF,TD,ZR,LR,ML,SN,TG,TN,AD,AO,BW,LS,MG,MW,NA,RW,SZ,AR,AZ,AM,BG,AU,AT,BH,BD,TR,BO,CR,EC,IQ,LI,BT,BA,BI,FK,CM,CA,CV,PE,CO,HR,CY,CZ,DK,DJ,SC,EG,GQ,GA,GY,HN,NI,SR,EE,ET,FO,FJ,FI,FR,PF,GM,PA,GH,GI,IE,GR,GU,GT,GW,HU,IS,IN,ID,IL,IT,CI,JP,KH,LA,KE,KI,TO,VU,KG,LV,LB,LY,LT,LU,MK,MY,MV,MT,MR,NE,MX,MN,MNE,MZ,MM,NP,NL,NC,NG,NO,OM,PK,PG,PH,PL,PR,QA,MD,SRB,RE,RO,SM,SG,SK,SI,SB,ZA,KR,LK,SE,CH,TJ,TH,TM,UK,TZ,UY,VE,VN,ZM,ZW,BN,MA,MC,KZ,UG,NZ,DE,PY,TLS,MU,PT,US,UZ,BE,JO,KW</textarea></td>
+ 		</tr>
+ 		<tr id="freight-custom-setting-SF_EPARCEL_OM"> 
+			<td>顺丰国际经济小包</td>
+			<td>freight-custom-setting-SF_EPARCEL_OM</td>
+			<td><textarea>EE,FI,LT,NO,PL,LV,SE</textarea></td>
+ 		</tr>
+	</tbody>
+</table>
+</div>
+</body>
+ 
+<script type="text/javascript">  
+
+	//主函数
+	$('#ShippingTemplate').change(function(e){
+		var shippingTemplate=e.target.files;
+		var shippingTemplateReader=new FileReader();	
+ 		
+ 		//获取对应的国家数据
+ 	 	var shippingkinds=$("#shippingkinds").val(); 
+		//读取物流国家数据
+		var shippingkindName=$("#"+shippingkinds).first("td").text();
+		var standardShipCountries=$("#"+shippingkinds).find("textarea").text();
+
+		console.log(shippingkindName);
+		//读取 Excel 文件 
+		shippingTemplateReader.onload=function(ev){ 
+			var shippingTemplateDataArray=[]; 
+			try{
+				//以二进制读取整个表格，本次仅针对一个sheet的表格
+				var shippingTemplateData = ev.target.result; 
+			  	var workbook=XLSX.read(shippingTemplateData,{type:"binary"}); 
+
+			  	
+			  	 for (var sheet in workbook.Sheets) {
+	                if (workbook.Sheets.hasOwnProperty(sheet)) { 
+	                    shippingTemplateDataArray = shippingTemplateDataArray.concat(XLSX.utils.sheet_to_formulae(workbook.Sheets[sheet]));
+	                }
+	            } 
+			}catch(e){
+				console.log('文件类型不正确');
+			 	return;
+			} 
+			//处理表格数据，后续如有分支模板直接调用不同的方法
+			var shippingPriceCountryMap=yanwenJSON(shippingTemplateDataArray); 
+			//统一处理
+			shipWeightDefinesJSON=dealWtihShippingPriceCountryMap(shippingPriceCountryMap,standardShipCountries);
+			//输出到textarea
+			$("#shippingTemplateJSON").text(shipWeightDefinesJSON);
+
+		}   
+		shippingTemplateReader.readAsBinaryString(shippingTemplate[0]); 
+	}) 
+ 	
+
+	
+
+	/*以下均为功能函数*/
+ 	/*
+ 	//功能：处理Map数据分解成对应的JSON数据，并剔除掉已经设置运费的国家
+ 	//@param shippingPriceCountryMap:Map结构数据，key为运费相关信息，value为地区信息
+ 	//@param standardShipCountries:标准运费地区，初始值各自设定
+ 	//@return 运费JSON数据
+ 	*/
+	function dealWtihShippingPriceCountryMap(shippingPriceCountryMap,standardShipCountries){
+
+		var iterator = shippingPriceCountryMap[Symbol.iterator]();
+
+		var valueCountries="", keyShippingPrice="";
+		var defines=[]; 
+		for (let item of iterator) {
+			keyShippingPrice=item[0];
+			valueCountries=item[1];
+
+			//分解valueCountries,剔除standardShipCountries中相同的字段
+			standardShipCountries=removeCountry(standardShipCountries,valueCountries);
+			//分解key与value值
+			var keyShippingPriceArray=keyShippingPrice.split("|");
+			/*var keyShippingPrice=firstWeight+"|"+firstPrice+"|"+continuedWeightStart+"|"+continuedWeightInterval+"|"+continuedWeightEnd+"|"+continuedPrice;*/
+			
+
+			var country=valueCountries;
+			var firstWeight=keyShippingPriceArray[0];
+			var firstPrice=keyShippingPriceArray[1];
+			var continuedWeightStart=keyShippingPriceArray[2];
+			var continuedWeightInterval=keyShippingPriceArray[3];
+			var continuedWeightEnd=keyShippingPriceArray[4];
+			var continuedPrice=keyShippingPriceArray[5];
+
+	 		
+			//构建单个国家的define 
+			var countryShipPrice={};
+			countryShipPrice.addFreight='';
+			
+			countryShipPrice.defineWeights=[{"endWeight":firstWeight,"intervalPrice":firstPrice,"intervalWeight":firstWeight,"startWeight":"0" },{"endWeight":continuedWeightEnd, "intervalPrice":continuedPrice,"intervalWeight":continuedWeightInterval,"startWeight":continuedWeightStart}] 
+			countryShipPrice.endOrderNum='';
+			countryShipPrice.minFreight='';
+			countryShipPrice.perAddNum='';
+		 
+			countryShipPrice.shippingCountry=country;
+			countryShipPrice.startOrderNum='';			 
+			countryShipPrice.type="weight";
+			
+			defines.push(countryShipPrice);  
+		} 
+
+		var shipWeightDefines={}
+		shipWeightDefines.defines=defines; 
+		shipWeightDefines.freeShipCountry="";
+		shipWeightDefines.notShippedCountries="";
+		shipWeightDefines.standardShipCountry=standardShipCountries; 
+		shipWeightDefines.standardShipDiscount= "0";
+		shipWeightDefines.standards=[];
+		
+		return JSON.stringify(shipWeightDefines);
+		//console.log(JSON.stringify(shipWeightDefines)); 
+	}
+
+
+ 	//燕文运费模板
+ 	//@param 表格数据，以单元格排列形成的数组
+ 	//@return Map结构数据,Key：运费组合字符串，value：国家字符串
+ 	function yanwenJSON(excleArrayData){
+ 		var shippingPriceCountryMap=new Map();
+
+ 		var arrayDataindex=1;//此值会与表格的表头行数有关 
+
+ 		while(arrayDataindex<excleArrayData.length/10){
+			//从表格中获取所需数据
+			var country=excleArrayData[arrayDataindex*10+2];
+			var firstWeight=excleArrayData[arrayDataindex*10+5];;
+			var firstPrice=excleArrayData[arrayDataindex*10+6];
+			var continuedWeightInterval=excleArrayData[arrayDataindex*10+7]
+			var continuedWeightEnd=excleArrayData[arrayDataindex*10+8]
+			var continuedPrice=excleArrayData[arrayDataindex*10+9];
+			var continuedWeightStart=0.01;
+			//预设固定值
+			
+			
+ 			
+			country=country.slice(-2);
+			firstWeight=firstWeight.substr(firstWeight.indexOf("=")+1);
+			continuedWeightStart=firstWeight;
+			continuedWeightInterval=continuedWeightInterval.substr(continuedWeightInterval.indexOf("=")+1);
+			continuedWeightEnd=continuedWeightEnd.substr(continuedWeightEnd.indexOf("=")+1); 
+			firstPrice=parseFloat(firstPrice.substr(firstPrice.indexOf("=")+1)).toFixed(2);
+			continuedPrice=parseFloat(continuedPrice.substr(continuedPrice.indexOf("=")+1)).toFixed(2);
+
+			//处理价格为负数的情况，全部变为0
+			if(firstPrice<=0)		{			firstPrice=0;		}
+			if(continuedPrice<=0)	{			continuedPrice=0;	}
+
+
+			//将数据存储至于Map中
+			//key：首重+"|"+首重价格+"|"+续重开始+"|"+续重结束+"|"+续重步增+"|"+续重价格
+			var keyShippingPrice=firstWeight+"|"+firstPrice+"|"+continuedWeightStart+"|"+continuedWeightInterval+"|"+continuedWeightEnd+"|"+continuedPrice;
+
+			//已经存在
+			if(shippingPriceCountryMap.has(keyShippingPrice)){
+				var valueCountries=shippingPriceCountryMap.get(keyShippingPrice);
+				valueCountries=valueCountries.concat(","+country); 
+				shippingPriceCountryMap.set(keyShippingPrice,valueCountries);
+			}else{
+				shippingPriceCountryMap.set(keyShippingPrice,country);
+			} 
+
+			arrayDataindex++;
+ 		}
+ 		return shippingPriceCountryMap;
+
+ 	}
+
+ 	/*
+ 	//去除标准运费中的某些国家模板 
+ 	//@param standardShipCountries:标准运费地区，初始值参考阿里巴巴
+ 	//@param removeCoutries:剔除的地区字符串，以「,」隔开
+ 	//@return 标准运费地区字符串
+ 	*/
+ 	function removeCountry(standardShipCountries, removeCoutries){
+ 		 
+ 		if(!(standardShipCountries!=null&&standardShipCountries.length>0)){
+			return "";
+ 		}
+ 		//将removeCoutries分解成单个国家简写
+ 		var removeCountryArray=removeCoutries.split(",");
+ 		var removeCountry="";
+ 		var removeCountryIndex=0;
+
+ 		for (var index = 0; index<removeCountryArray.length; index++) {
+		 	 var removeCountry=removeCountryArray[index];
+
+		 	 removeCountryIndex=standardShipCountries.indexOf(removeCountry); 
+			//删除掉相关的国家
+			if(removeCountryIndex!=0){
+				standardShipCountries=standardShipCountries.replace(","+removeCountry,"");
+			}else{
+				standardShipCountries=standardShipCountries.replace(removeCountry+",","");
+			} 
+			//判断国家填写项目是否还有其他的
+			if(standardShipCountries!=null&&standardShipCountries.length==0){
+				break;
+			}
+			
+		} 
+		return standardShipCountries;
+ 	} 
+</script>
+ 
+<style type="text/css">
+	body{
+		margin: 0px;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; 
+		font-size: 1rem;
+		font-weight: 400;
+		line-height: 1.5;
+		color: #333;
+		text-align: left;
+		background-color: #eee;
+	}
+	hr {
+		  margin: 1rem 0;
+		  border: 0;
+		  height: 0;
+		  border-bottom: 1.5px dashed #cacaca;   
+	}
+	strong {
+	    font-weight: 700;
+	    color: #ff1700; 
+	}
+	table { 
+		width: 90%;
+		margin-top: 1rem;
+		margin-bottom: 1rem; 
+		margin-left: auto;
+		margin-right: auto; 
+		border-collapse: collapse;
+		border-right: 0.08rem solid #000000;
+		border-bottom: 0.08rem solid #000000;
+	}
+	table th, table td {
+		padding: 0.5rem 0.5rem;
+		border-top: 0.08rem solid #000000;
+		border-left: 0.08rem solid #000000;
+	}
+	table tbody tr:nth-child(2n+1) {
+		background-color: #ddd;
+	}
+	ul{
+		line-height: 1.2rem;
+		margin-top: 0.5rem;
+		margin-bottom: 0.5rem;
+		list-style-type: none; }
+	ul > li {
+		margin-top: 0.5rem;
+		line-height: 1.8rem; 
+	}
+	.title{
+		box-sizing: border-box;
+		color: rgb(51, 51, 51); 
+		font-size: 24px;
+		font-weight: 500;
+		line-height: 28.8px;
+		margin-bottom: 2rem;
+		margin-top: 2rem;
+		text-align: center;
+	}
+	.ShippingTemplateLabel{
+    	position: relative;
+	}
+	#ShippingTemplate{
+	    position: absolute;
+	    left: 0;
+	    top: 0;
+	    opacity: 0;
+	} 
+	.btn-primary{
+		background-color: rgb(0, 123, 255);  
+		border-color:  #6C757D; 
+		border-style: solid; 
+		border-radius: 4px;
+		border-width: 0.666667px; 
+		color: rgb(255, 255, 255); 
+		display: inline-block; 
+		font-size: 16px;
+		font-weight: 400;
+		line-height: 24px;
+		margin:4px 0px ;
+		padding: 6px 12px; 
+		text-align: center;  
+		vertical-align: middle; 
+ 	} 
+	.content-card{ 
+		box-shadow: 0 0.125rem 0.25rem 0rem rgba(0, 0, 0, 0.16), 0 0.125rem 0.5rem 0rem rgba(0, 0, 0, 0.12);
+		border: 0.025rem solid #dee8ef;
+		border-radius: .25rem;
+		background: #fff; 
+		margin-top: 3rem;
+		margin-bottom: 1rem; 
+		margin-right: auto;
+		margin-left: auto;
+		padding: 2rem; 
+		width: 80%;
+	}
+	.select-drop{
+		background-color: #6C757D; 
+		margin:0px;
+		padding: 6px 12px; 
+	 	border-color:  #6C757D; 
+		border-style: solid; 
+		border-radius: 4px;
+		border-width: 0.666667px; 
+		color: rgb(255, 255, 255); 
+		display: inline-block; 
+		font-weight: 400;
+		font-size: 16px;
+		line-height: 24px; 
+		text-align: center;  
+		vertical-align: middle; 
+	}
+	
+	#shippingTemplateJSON{
+		width: 90%;
+		height: 20rem;
+	} 
+</style>
+</html>

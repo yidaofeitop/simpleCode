@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>阿里巴巴运费模板-Excle转为JSON</title>
+	<!--导入 JQuery 库-->
+	<script lang="javascript" src="dist/jquery-3.4.1.min.js"></script>
+	<!--导入 js-xls插件-->
+	<script lang="javascript" src="dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+
+<input type="text" id="standardShipCountry" placeholder="请输入本物流可到达的所有国家代码，以「,」隔开" style="width: 100%"><br/>
+
+<input type="file" id="shipFile"><br/>
+
+
+<textarea id="excelJOSN" style="width: 100%;height: 400px;"></textarea>
+
+</body>
+
+<script type="text/javascript">  
+ 
+	$('#shipFile').change(function(e){
+		var files=e.target.files;
+		var fileReader=new FileReader();
+		//读取Excel文件
+		fileReader.onload=function(ev){
+			try{
+				var data = ev.target.result;
+			  	//以二进制读取整个表格
+			  	var workbook=XLSX.read(data,{type:"binary"});
+			  	//物流数据数组
+			  	var shipDataArray=[]; 
+			  	var fromTo = '';
+
+			  	//遍历每张表读取
+	            for (var sheet in workbook.Sheets) {
+	                if (workbook.Sheets.hasOwnProperty(sheet)) {
+	                    fromTo = workbook.Sheets[sheet]['!ref'];
+	                    shipDataArray = shipDataArray.concat(XLSX.utils.sheet_to_formulae(workbook.Sheets[sheet]));
+	                }
+	            }
+			}catch(e){
+				console.log('文件类型不正确');
+			 	return;
+			}
+			//console.log(shipDataArray); 
+			//遍历二维数组
+			var index=1;
+			//创建对应的JSON数组
+			var defines=[];
+			var standardShipCountry=$('#standardShipCountry').val();
+		/*	var standardShipCountry="AF,IE,EE,AT,AU,BE,IS,PL,DK,DE,FR,FI,NL,CA,CZ,HR,LV,LT,US,MD,MX,NO,PT,SE,CH,SK,SI,TH,TR,NZ,HU,IL,IT,IN,UK,CL,PR,KZ,CY,RO,PE,MT,BA,CO,CR,LK,ZA,NG,KE,GE,JP,KR,ID,AL,DZ,AR,OM,AZ,EG,ET,AD,AO,PG,PK,PY,BH,PA,BG,BJ,BW,BT,BF,BI,GQ,TL,TG,FO,PF,PH,FJ,CV,FK,GM,GU,GY,MNE,HN,KI,DJ,KG,GN,GW,GH,GA,KH,ZW,CM,QA,KW,LS,LA,LB,LR,RE,LU,RW,MG,MV,MW,ML,MK,MU,MR,MN,BD,MM,MA,MC,MZ,NA,NP,NI,NE,SRB,SN,SC,SM,SZ,SR,SB,TJ,TZ,TO,TN,TM,VU,GT,VE,BN,UG,UY,UZ,GR,CI,NC,AM,JO,VN,ZM,TD,GI,SJ,SX,SV,BO,BZ,TT,EC,AN,LI,MH,AS,VI,FM,PM,VI,GF,GD,AI,LC,GGY,GP,WF,KY,KM,MP,CK,AG";*/
+			var removeCountryIndex=0;
+			while(index<shipDataArray.length/7){
+				/*console.log(shipDataArray[index*7+2].substring(4,6)+" "+shipDataArray[index*7+5].substring(4,8)+" "+shipDataArray[index*7+6].substring(4,8));*/
+				var country=shipDataArray[index*7+2];
+				var originPrice=shipDataArray[index*7+5];
+				var continuedPrice=shipDataArray[index*7+6];
+				country=country.slice(-2);
+				originPrice=parseFloat(originPrice.substr(originPrice.indexOf("=")+1)).toFixed(2);
+				continuedPrice=parseFloat(continuedPrice.substr(continuedPrice.indexOf("=")+1)).toFixed(2);
+			 	
+				//处理freeShipCountry
+				if(standardShipCountry.length>0){
+					removeCountryIndex=standardShipCountry.indexOf(country); 
+					//删除掉相关的国家
+					if(removeCountryIndex!=0){
+						standardShipCountry=standardShipCountry.replace(","+country,"");
+					}else{
+						standardShipCountry=standardShipCountry.replace(country+",","");
+					} 
+				}
+
+	
+
+				//构建define
+				var countryShipPrice={};
+				countryShipPrice.addFreight='';
+				
+				countryShipPrice.defineWeights=[{"endWeight":"0.01","intervalPrice":originPrice,"intervalWeight":"0.01","startWeight":"0" },{"endWeight":"1", "intervalPrice":continuedPrice,"intervalWeight":"0.01","startWeight":"0.01"}] 
+				countryShipPrice.endOrderNum='';
+				countryShipPrice.minFreight='';
+				countryShipPrice.perAddNum='';
+			 
+				countryShipPrice.shippingCountry=country;
+				countryShipPrice.startOrderNum='';			 
+				countryShipPrice.type="weight";
+				
+				defines.push(countryShipPrice); 
+				
+				index++;
+			} 
+			//构建整体的JSON
+			var shipWeightDefines={}
+			shipWeightDefines.defines=defines; 
+			shipWeightDefines.freeShipCountry="";
+			shipWeightDefines.notShippedCountries="";
+			shipWeightDefines.standardShipCountry=standardShipCountry; 
+			shipWeightDefines.standardShipDiscount= "0";
+			shipWeightDefines.standards= [];
+		
+			console.log(JSON.stringify(defines)); 
+
+			$("#excelJOSN").text(JSON.stringify(shipWeightDefines));
+		}
+		// 以二进制方式打开文件
+        fileReader.readAsBinaryString(files[0]); 
+	}) 
+</script>
+</html>
