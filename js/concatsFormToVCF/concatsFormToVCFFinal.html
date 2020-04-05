@@ -193,82 +193,63 @@
             if(isOnlyPhone){
                 name=key;
                 phoneNumber=valueArray[0]; 
-            }
-            
+            } 
             //判断数据无空的情况;拆出相关的数据
             if(!(name==undefined||phoneNumber==undefined)){
+            	//处理Excel字符串格式所特有的'
+            	name=name.replace("'","");
                 if(!isOnlyPhone){
                     name=name.substr(name.indexOf("=")+1); 
                 } 
-                phoneNumber=phoneNumber.substr(phoneNumber.indexOf("=")+1); 
-                if(isQcc){
-                    //主要针对企查查会显示为"'1378232323"
-                    name=name.substr(1);
-                    phoneNumber=phoneNumber.substr(1); 
-                }
-                //如果是手机号码，则存入Map结构
-                //针对有多个号码的问题 ，现阶段采用批分，然后验证是否是手机号码
-                var phoneArray=phoneNumber.split("；"); 
-                var concatsMapValue=new Array();
-                index=0;
-
-                if(phoneArray.length>0){
-                    while(index<phoneArray.length){
-                        if(checkPhoneNumber(phoneArray[index])){
-                            concatsMapValue.push(phoneArray[index]);     
-                        }
-                        index++;
-                    } 
-                    if(concatsMapValue.length>0){
-                        var exsitConcatsMapValue=concatsMap.get(name);
-                        if(!(exsitConcatsMapValue==undefined)&&exsitConcatsMapValue.length>0){ 
-                            exsitConcatsMapValue.push(concatsMapValue);
-                             concatsMap.set(name,exsitConcatsMapValue); 
-                        }else{
-                            concatsMap.set(name,concatsMapValue);
-                        } 
-                    }
-                } 
+                phoneNumber=phoneNumber.substr(phoneNumber.indexOf("=")+1);  
+                //抽离手机号码
+                var phoneArray=extraCellPhoneNumber(phoneNumber);  
+                //将姓名与电话号码存入结构中 
+                if(phoneArray.length>0){  
+		              concatsMap.set(name,phoneArray);
+	   			 } 
             }   
         }  
         return concatsMap;
 	}
  
-
 	/*
-	//传入字符串
-	@verison {String}VCF版本，可选字段，如无则默认3.0版本
-	@nameType {String}名字种类，必需字段
-	@telType {String}电话号码种类，必需字段
-	为占位符
-	@isRev	{Boolean}是否有时间戳，可选字段，默认 flase        
+	function :抽离表格数据中的手机号码信息
+	@parma phoneNumbersStr 电话号码字符串
 	*/
-	function createVCFTemplate(version,nameType,telType,isRev,phoneNumberAccount){
-		var oneVCFRecord="BEGIN:VCARD";
-		//版本
-		if(version==undefined){oneVCFRecord=oneVCFRecord+"\nversion:3.0"}
-		else{oneVCFRecord=oneVCFRecord+"\nversion:"+version}
-		//nameType
-		oneVCFRecord=oneVCFRecord+"\n"+nameType;
-		//telType
-		if(phoneNumberAccount==1){
-			oneVCFRecord=oneVCFRecord+"\n"+telType;
-		}else{ 
+	function extraCellPhoneNumber( phoneMumbersStr){
+		if(phoneMumbersStr==undefined || (phoneMumbersStr!=undefined&&phoneMumbersStr.length<1) ){
+			return "无符合情况的电话数据";
+		}
+
+		//判断各种电话号码的情况
+		//优先处理断点情况，利用正则表达式将所有断点情况替换成；
+		//然后逐一的验证是否是手机号码
+		phoneMumbersStr=phoneMumbersStr.replace(/[^\d-]/g, "；"); 
+		var phoneArray=phoneMumbersStr.split("；");
+
+		//验证电话数据并将手机号码抽离出
+		//利用Set集合将重复的数据直接删除
+		var phoneSet=new Set();
+		if(phoneArray.length>0){
+			
+
 			var index=0;
-			var realTeltype=null;
-			while(index<phoneNumberAccount){
-				realTeltype=telType.replace("phoneNumber","phoneNumber"+(index+1));  
-				oneVCFRecord=oneVCFRecord+"\n"+realTeltype;
+			while(index<phoneArray.length){
+				/**
+				* 验证手机号码
+				* 
+				* 移动号码段:139、138、137、136、135、134、150、151、152、157、158、159、182、183、187、188、147、198
+				* 联通号码段:130、131、132、136、185、186、145
+				* 电信号码段:133、153、180、189
+				*/
+				if(/^1[3-9][0-9]\d{4,8}$/.test(phoneArray[index])){
+					 phoneSet.add(phoneArray[index]);
+				}
 				index++;
-			} 
-		}
-		//isRev
-		if(isRev){ 
-			var timestamp=new Date().format("yyyy-MM-dd hh:mm:ss");
-			oneVCFRecord=oneVCFRecord+"\nREV:"+timestamp;
-		}
-		oneVCFRecord=oneVCFRecord+"\nEND:VCARD"
-		return oneVCFRecord 
+			}
+			return Array.from(phoneSet);
+		} 
 	}
 
 	/*架构IPHONE模板数据，模板如下：
@@ -319,12 +300,9 @@
 				} 
 			}else{
 				oneVCFRecord=oneVCFRecord.replace(/phoneNumber/g,valuePhoneNumberArray[0]);
-			}
-		
-
+			} 
 		 	var nickNameRecord=createVCFTemplate
-		 	concatsStr=concatsStr+oneVCFRecord+"\n";
-
+		 	concatsStr=concatsStr+oneVCFRecord+"\n"; 
 		 	iteratorIndex++;
 		}  
 
@@ -336,23 +314,43 @@
 	}
 
 
-	/**
-	* 验证手机号码
-	* 
-	* 移动号码段:139、138、137、136、135、134、150、151、152、157、158、159、182、183、187、188、147、198
-	* 联通号码段:130、131、132、136、185、186、145
-	* 电信号码段:133、153、180、189
-	* 
-	* @param {String} phoneNumber
-	* @return {Boolean} 
+	/*
+	//传入字符串
+	@verison {String}VCF版本，可选字段，如无则默认3.0版本
+	@nameType {String}名字种类，必需字段
+	@telType {String}电话号码种类，必需字段
+	为占位符
+	@isRev	{Boolean}是否有时间戳，可选字段，默认 flase        
 	*/
- 	function checkPhoneNumber(phoneNumber){ 
-		if(/^1[3-9][0-9]\d{4,8}$/.test(phoneNumber)){
-			return true;
+	function createVCFTemplate(version,nameType,telType,isRev,phoneNumberAccount){
+		var oneVCFRecord="BEGIN:VCARD";
+		//版本
+		if(version==undefined){oneVCFRecord=oneVCFRecord+"\nversion:3.0"}
+		else{oneVCFRecord=oneVCFRecord+"\nversion:"+version}
+		//nameType
+		oneVCFRecord=oneVCFRecord+"\n"+nameType;
+		//telType
+		if(phoneNumberAccount==1){
+			oneVCFRecord=oneVCFRecord+"\n"+telType;
+		}else{ 
+			var index=0;
+			var realTeltype=null;
+			while(index<phoneNumberAccount){
+				realTeltype=telType.replace("phoneNumber","phoneNumber"+(index+1));  
+				oneVCFRecord=oneVCFRecord+"\n"+realTeltype;
+				index++;
+			} 
 		}
-		return false;
- 	}
+		//isRev
+		if(isRev){ 
+			var timestamp=new Date().format("yyyy-MM-dd hh:mm:ss");
+			oneVCFRecord=oneVCFRecord+"\nREV:"+timestamp;
+		}
+		oneVCFRecord=oneVCFRecord+"\nEND:VCARD"
+		return oneVCFRecord 
+	}
 
+	
 
 	//引用自https://blog.csdn.net/qq_39985511/article/details/80031674
 	Date.prototype.format = function(fmt) { 
