@@ -18,9 +18,9 @@
 		<ul>  
 			<li>具体操作步骤：
 				<ol>
-					<li>针对表头类型选用不同的上传按钮</li> 
-					<li>系统会提示<strong>下载多个 VCF 文件</strong>（每个文件3000个联系人），请点击允许</li>
-					<li>打开 icloud.com 网站，点击通讯录，点击左下角的<strong>「导入vCard文件」</strong></li>
+					<li>针对不同的手机选用不同的手机机型</li>
+					<li>针对不同的表格选用不同的表格上传按钮</li>
+					<li>企查查表格要求<strong>C列为姓名，IJ为电话信息</strong>，否则不要选用企查查按钮</li> 
 				</ol>
 			</li> 
 		</ul>
@@ -29,7 +29,7 @@
 
 	<table>
 		<tr>
-			<td>手机选项</td>
+			<td>手机机型</td>
 			<td>
 				<select class="btn-primary" id="phoneType">
 					<option value ="HuaWei">华为手机</option>
@@ -216,7 +216,7 @@
             //企查查表头
             if(isQcc){
                 name=valueArray[2];
-                phoneNumber=valueArray[8]; 
+                phoneNumber=valueArray[8]+"；"+valueArray[9]; 
             }
             //仅有电话号码情况 
             if(isOnlyPhone){
