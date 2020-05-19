@@ -2,12 +2,12 @@
 <html>
 <head>
 	<title>联系人表格转化为VCF</title>
-	<!--导入 JQuery 库 导入 js-xls插件 
-	<script lang="javascript" src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
-	<script lang="javascript" src="https://cdn.bootcss.com/xlsx/0.15.1/xlsx.full.min.js"></script>-->
 
+	<script lang="javascript" src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+	<script lang="javascript" src="https://cdn.bootcss.com/xlsx/0.15.1/xlsx.full.min.js"></script>
+    <!--导入 JQuery 库 导入 js-xls插件 
     <script type="text/javascript" src="dist/jquery-3.4.1.min.js"></script>
-    <script type="text/javascript" src="dist/xlsx.full.min.js"></script>
+    <script type="text/javascript" src="dist/xlsx.full.min.js"></script>-->
 </head> 
 <body>
 
@@ -15,8 +15,7 @@
 <div class="content-card"> 
 	<div>
 		<strong>Tips:</strong>
-		<ul> 
-			<li>目前生成的格式以IPHONE为主，如有其他机型需求针对性的而修改函数即可</li>
+		<ul>  
 			<li>具体操作步骤：
 				<ol>
 					<li>针对表头类型选用不同的上传按钮</li> 
@@ -30,10 +29,19 @@
 
 	<table>
 		<tr>
+			<td>手机选项</td>
+			<td>
+				<select class="btn-primary" id="phoneType">
+					<option value ="HuaWei">华为手机</option>
+					<option value ="IPHONE">苹果手机</option> 
+				</select>
+			</td>
+		</tr>
+		<tr>
 			<td>手机号码表头表格</td>
 			<td> 
 				<label for="onlyPhoneConcatsTemplate" class="concatsTemplateLabel">
-		            <input type="button" class="btn-primary" value="点我上传"><span>请上传Word文档</span>
+		            <input type="button" class="btn-primary" value="点我上传"><span>请上传Excel文档</span>
 		            <input type="file" id="onlyPhoneConcatsTemplate">
 				</label>
 			</td>
@@ -42,7 +50,7 @@
 			<td>联系人/手机号码表头表格</td>
 			<td> 
 				<label for="concatsTemplate" class="concatsTemplateLabel">
-					<input type="button" class="btn-primary" value="点我上传"><span>请上传Word文档</span>
+					<input type="button" class="btn-primary" value="点我上传"><span>请上传Excel文档</span>
 					<input type="file" id="concatsTemplate">
 				</label>
 			</td>
@@ -51,7 +59,7 @@
 			<td>企查查表格：</td>
 			<td> 
 				<label for="qccConcatsTemplate" class="concatsTemplateLabel">
-				    <input type="button" class="btn-primary" value="点我上传"><span>请上传Word文档</span>
+				    <input type="button" class="btn-primary" value="点我上传"><span>请上传Excel文档</span>
 				    <input type="file" id="qccConcatsTemplate">
 				</label>
 			</td>
@@ -90,11 +98,17 @@
      * @param  {String} isQcc  是否是企查查
      * @param  {String} isOnlyPhone 是否只有手机号码
      */
-	function dealWithExcelUpload(e,isQcc,isOnlyPhone){
+	function dealWithExcelUpload(e,isQcc,isOnlyPhone,phoneType){
 		var concatsTemplate=e.target.files;
 		var concatsTemplateReader=new FileReader();	
  		 
  		var concatsStrArray=null;
+
+ 		//获取手机类型
+		var phoneType=$("#phoneType").val();
+		if(phoneType==undefined){
+			alert("请选择对应的手机型号，如无则联系管理园");
+		}
 		//读取 Excel 文件 
 		concatsTemplateReader.onload=function(ev){ 
 			var concatsTemplateDataArray=[]; 
@@ -120,7 +134,8 @@
 			if(concatsMap.size<1){
 				alert("无符合要求的数据，请确认是否有相关数据");
 			}
- 			concatsStrArray=dealWtihIPHONEConcatsMap(concatsMap);
+
+ 			concatsStrArray=dealWtihConcatsMap(concatsMap,phoneType);
 			//输出到textarea
 			var allConcatsStr="";
 			for(var index=0;index<concatsStrArray.length;index++){
@@ -132,7 +147,6 @@
 				createAndDownloadFile("concats"+tagStart+"-"+tagEnd+".VCF",concatsStr); 
 			}
 			$("#concatsTemplateJSON").text(allConcatsStr);  
-
 		}   
 		concatsTemplateReader.readAsBinaryString(concatsTemplate[0]);
 	}
@@ -157,8 +171,7 @@
  	//@return {Map} Key：人名，value：手机号码列表
 	function concatsExcelData(excleArrayData,isQcc,isOnlyPhone){
 		var concatsMap=new Map(); 
-
-
+ 
 		//本版本与之前的版本主要的差异就是不在以固定列的形势处理表格数据
  		//采用优先架构出一个行对应的Map结构来，然后再对Map结果进行进一步的处理
  		//相比之前的格式会适配性更加的强，关键代码如下：
@@ -266,11 +279,22 @@
 		} 
 	}
 
-	/*架构IPHONE模板数据，模板如下：
+	
+	//处理数据入口
+	function dealWtihConcatsMap(concatsMap,phoneType){
+		switch(phoneType){
+			 case "HuaWei":return dealWtihConcatsMapHuawei(concatsMap);
+			 case "IPHONE":return dealWtihConcatsMapIphone(concatsMap);
+			 default:return null;
+		}  
+	}
+
+
+	/*架构HuaWei模板数据，模板如下：
 	* @param 	{Map} Key：人名，value：手机号码
 	* @return 	{Array} VCF字符串数组，3000个联系人为一组
 	*/
-	function dealWtihIPHONEConcatsMap(concatsMap){ 
+	function dealWtihConcatsMapHuawei(concatsMap){ 
 		var iterator = concatsMap[Symbol.iterator]();
 
 		//存储字符串数组
@@ -292,18 +316,112 @@
 
 			keyName=item[0];
 			valuePhoneNumberArray=item[1]; 
+ 
+		 	//预设定义 
+		    var version="2.1"; 
+		    var nameType="N;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;nickName;;;\nFN;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:nickName";
+		    var telType="TEL;CELL:phoneNumber";
+		    var phoneNumberAccount=valuePhoneNumberArray.length;
 
-　
-			//注意如不加「CHARSET=UTF-8」很有可能出现乱码问题
-			/**
-			var oneVCFRecord=createVCFTemplate("3.0","FN;CHARSET=UTF-8:nickName\nN;CHARSET=UTF-8:nickName;;;;","TEL;type=CELL;type=VOICE;type=pref:phoneNumber",false);
-			oneVCFRecord=oneVCFRecord.replace(/nickName/g,keyName);
-			oneVCFRecord=oneVCFRecord.replace(/phoneNumber/g,valuePhoneNumber);
-		 	//console.log(oneVCFRecord);
-		 	*/
-		 	//20200402 调整为多电话号码
-		 	var oneVCFRecord=createVCFTemplate("3.0","FN;CHARSET=UTF-8:nickName\nN;CHARSET=UTF-8:nickName;;;;","TEL;type=CELL;type=VOICE;type=pref:phoneNumber",false,valuePhoneNumberArray.length);
+		    //模板创建_start
+		 	var oneVCFRecord="BEGIN:VCARD"; 
+			if(version==undefined){oneVCFRecord=oneVCFRecord+"\nVERSION:3.0"}
+			else{oneVCFRecord=oneVCFRecord+"\nVERSION:"+version}
+			//nameType
+			oneVCFRecord=oneVCFRecord+"\n"+nameType;
+			//telType
+			if(phoneNumberAccount==1){
+				oneVCFRecord=oneVCFRecord+"\n"+telType;
+			}else{ 
+				var index=0;
+				var realTeltype=null;
+				while(index<phoneNumberAccount){
+					realTeltype=telType.replace("phoneNumber","phoneNumber"+(index+1));  
+					oneVCFRecord=oneVCFRecord+"\n"+realTeltype;
+					index++;
+				} 
+			} 
+			oneVCFRecord=oneVCFRecord+"\nEND:VCARD"
+		    //模板创建_end
 
+		    //数据替换
+			oneVCFRecord=oneVCFRecord.replace(/nickName/g,encodeURIComponent(keyName).replace(new RegExp('%',"g"),"="));
+			if(valuePhoneNumberArray.length>1){
+				var index=0;
+				while(index<valuePhoneNumberArray.length){
+					var replaceMatchStr="phoneNumber"+(index+1);
+					oneVCFRecord=oneVCFRecord.replace(replaceMatchStr,valuePhoneNumberArray[index]);
+					index++;
+				} 
+			}else{
+				oneVCFRecord=oneVCFRecord.replace(/phoneNumber/g,valuePhoneNumberArray[0]);
+			}  
+		 	concatsStr=concatsStr+oneVCFRecord+"\n"; 
+		 	iteratorIndex++;
+		}  
+
+		//最后一次遍历值
+		if(concatsStr!=""){
+			concatsStrArray.push(concatsStr);
+		}
+		return concatsStrArray;
+	}
+
+	/*架构IPHONE模板数据，模板如下：
+	* @param 	{Map} Key：人名，value：手机号码
+	* @return 	{Array} VCF字符串数组，3000个联系人为一组
+	*/
+	function dealWtihConcatsMapIphone(concatsMap){ 
+		var iterator = concatsMap[Symbol.iterator]();
+
+		//存储字符串数组
+		var concatsStrArray=[];
+		//存储联系人字符串变量
+		var concatsStr="";
+		//存储迭代处理总数变量
+		var iteratorIndex=1;
+
+		var valuePhoneNumberArray=null;
+		var keyName="";
+		  
+		for (let item of iterator) {
+			if(iteratorIndex==3000){
+				iteratorIndex=1;
+				concatsStrArray.push(concatsStr);
+				concatsStr="";
+			}
+
+			keyName=item[0];
+			valuePhoneNumberArray=item[1]; 
+ 
+		 	//预设定义
+		    var version="3.0";
+		    var nameType="FN;CHARSET=UTF-8:nickName\nN;CHARSET=UTF-8:nickName;;;;";
+		    var telType="TEL;type=CELL;type=VOICE;type=pref:phoneNumber";
+		    var phoneNumberAccount=valuePhoneNumberArray.length;
+
+		    //模板创建_start
+		 	var oneVCFRecord="BEGIN:VCARD"; 
+			if(version==undefined){oneVCFRecord=oneVCFRecord+"\nversion:3.0"}
+			else{oneVCFRecord=oneVCFRecord+"\nversion:"+version}
+			//nameType
+			oneVCFRecord=oneVCFRecord+"\n"+nameType;
+			//telType
+			if(phoneNumberAccount==1){
+				oneVCFRecord=oneVCFRecord+"\n"+telType;
+			}else{ 
+				var index=0;
+				var realTeltype=null;
+				while(index<phoneNumberAccount){
+					realTeltype=telType.replace("phoneNumber","phoneNumber"+(index+1));  
+					oneVCFRecord=oneVCFRecord+"\n"+realTeltype;
+					index++;
+				} 
+			} 
+			oneVCFRecord=oneVCFRecord+"\nEND:VCARD"
+		    //模板创建_end
+
+		    //数据替换
 			oneVCFRecord=oneVCFRecord.replace(/nickName/g,keyName);
 			if(valuePhoneNumberArray.length>1){
 				var index=0;
@@ -315,56 +433,17 @@
 			}else{
 				oneVCFRecord=oneVCFRecord.replace(/phoneNumber/g,valuePhoneNumberArray[0]);
 			} 
-		 	var nickNameRecord=createVCFTemplate
+		 	 
 		 	concatsStr=concatsStr+oneVCFRecord+"\n"; 
 		 	iteratorIndex++;
 		}  
 
-		//最后一次便利值
+		//最后一次遍历值
 		if(concatsStr!=""){
 			concatsStrArray.push(concatsStr);
 		}
 		return concatsStrArray;
-	}
-
-
-	/*
-	//传入字符串
-	@verison {String}VCF版本，可选字段，如无则默认3.0版本
-	@nameType {String}名字种类，必需字段
-	@telType {String}电话号码种类，必需字段
-	为占位符
-	@isRev	{Boolean}是否有时间戳，可选字段，默认 flase        
-	*/
-	function createVCFTemplate(version,nameType,telType,isRev,phoneNumberAccount){
-		var oneVCFRecord="BEGIN:VCARD";
-		//版本
-		if(version==undefined){oneVCFRecord=oneVCFRecord+"\nversion:3.0"}
-		else{oneVCFRecord=oneVCFRecord+"\nversion:"+version}
-		//nameType
-		oneVCFRecord=oneVCFRecord+"\n"+nameType;
-		//telType
-		if(phoneNumberAccount==1){
-			oneVCFRecord=oneVCFRecord+"\n"+telType;
-		}else{ 
-			var index=0;
-			var realTeltype=null;
-			while(index<phoneNumberAccount){
-				realTeltype=telType.replace("phoneNumber","phoneNumber"+(index+1));  
-				oneVCFRecord=oneVCFRecord+"\n"+realTeltype;
-				index++;
-			} 
-		}
-		//isRev
-		if(isRev){ 
-			var timestamp=new Date().format("yyyy-MM-dd hh:mm:ss");
-			oneVCFRecord=oneVCFRecord+"\nREV:"+timestamp;
-		}
-		oneVCFRecord=oneVCFRecord+"\nEND:VCARD"
-		return oneVCFRecord 
-	}
-
-	
+	} 
 
 	//引用自https://blog.csdn.net/qq_39985511/article/details/80031674
 	Date.prototype.format = function(fmt) { 
